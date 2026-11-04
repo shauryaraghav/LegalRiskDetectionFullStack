@@ -1,0 +1,9 @@
+# Automatic HTTPS (Let's Encrypt). DOMAIN comes from .env via docker-compose.
+{$DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	reverse_proxy frontend:8080
+}

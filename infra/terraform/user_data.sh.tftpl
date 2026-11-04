@@ -1,0 +1,28 @@
+#!/bin/bash
+# First-boot provisioning (Amazon Linux 2023). Installs Docker + Compose, generates secrets, schedules DB backups.
+set -euxo pipefail
+
+dnf install -y docker cronie
+systemctl enable --now docker crond
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -fsSL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+usermod -aG docker ec2-user
+
+mkdir -p /opt/legalrisk
+if [ ! -f /opt/legalrisk/.env ]; then
+  cat > /opt/legalrisk/.env <<ENV
+DOMAIN=${domain}
+REGISTRY_IMAGE=${registry_image}
+ADMIN_EMAILS=${admin_email}
+BACKUP_BUCKET=${backup_bucket}
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
+JWT_SECRET=$(openssl rand -hex 48)
+GRAFANA_PASSWORD=$(openssl rand -hex 12)
+ENV
+  chmod 600 /opt/legalrisk/.env
+fi
+chown -R ec2-user:ec2-user /opt/legalrisk
+
+echo "17 2 * * * ec2-user /opt/legalrisk/deploy/scripts/backup.sh >> /opt/legalrisk/backup.log 2>&1" > /etc/cron.d/legalrisk-backup

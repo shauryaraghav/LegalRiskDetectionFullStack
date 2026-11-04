@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/api.ts","./src/auth.tsx","./src/lib.test.ts","./src/lib.ts","./src/main.tsx","./src/types.ts","./src/components/ClauseCard.tsx","./src/components/ui.tsx","./src/pages/Auth.tsx","./src/pages/Compare.tsx","./src/pages/ContractDetail.tsx","./src/pages/Contracts.tsx","./src/pages/Model.tsx","./src/pages/NewContract.tsx"],"version":"5.9.3"}

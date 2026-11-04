@@ -1,0 +1,32 @@
+groups:
+  - name: legalrisk
+    rules:
+      - alert: BackendDown
+        expr: up{job="backend"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: "Backend is not being scraped (down or crash-looping)" }
+      - alert: High5xxRate
+        expr: sum(rate(http_requests_total{status="5xx"}[5m])) / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "More than 5% of requests are failing with 5xx" }
+      - alert: HighP95Latency
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_highr_seconds_bucket[5m]))) > 2
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "p95 request latency above 2s" }
+      - alert: AnalysisJobsFailing
+        expr: increase(legalrisk_analysis_jobs_total{status="failed"}[15m]) > 3
+        labels: { severity: warning }
+        annotations: { summary: "More than 3 contract analysis jobs failed in 15 minutes" }
+      - alert: HostMemoryHigh
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.9
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "Host memory above 90%" }
+      - alert: HostDiskLow
+        expr: node_filesystem_avail_bytes{mountpoint="/host",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/host",fstype!="tmpfs"} < 0.15
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "Less than 15% disk space left" }
