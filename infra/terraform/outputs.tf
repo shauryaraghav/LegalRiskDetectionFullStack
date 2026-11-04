@@ -10,4 +10,4 @@ output "ssh" { value = "ssh ec2-user@${aws_eip.app.public_ip}" }
 output "grafana_tunnel" {
   value = "ssh -L 3000:localhost:3000 ec2-user@${aws_eip.app.public_ip}  # then open http://localhost:3000"
 }
-output "backup_bucket" { value = aws_s3_bucket.backups.bucket }
+output "backup_bucket" { value = local.backup_bucket }

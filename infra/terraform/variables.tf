@@ -40,3 +40,8 @@ variable "existing_instance_profile" {
   default     = ""
   description = "Use an existing instance profile instead of creating IAM resources. AWS Academy Learner Lab: set to LabInstanceProfile (IAM creation is blocked there)."
 }
+variable "existing_backup_bucket" {
+  type        = string
+  default     = ""
+  description = "Use an S3 bucket you created yourself instead of letting Terraform create one. AWS Academy Learner Lab: required."
+}

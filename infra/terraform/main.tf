@@ -67,24 +67,34 @@ locals {
 }
 
 # ------------------------------------------------------------------ backups bucket
+# AWS Academy blocks s3:GetBucketObjectLockConfiguration, which the provider calls on every aws_s3_bucket, so there
+# set existing_backup_bucket and create the bucket with the AWS CLI instead (see docs/DEVOPS.md).
+locals {
+  create_bucket = var.existing_backup_bucket == ""
+  backup_bucket = local.create_bucket ? "${var.name}-backups-${data.aws_caller_identity.me.account_id}" : var.existing_backup_bucket
+}
 resource "aws_s3_bucket" "backups" {
-  bucket = "${var.name}-backups-${data.aws_caller_identity.me.account_id}"
+  count  = local.create_bucket ? 1 : 0
+  bucket = local.backup_bucket
 }
 resource "aws_s3_bucket_public_access_block" "backups" {
-  bucket                  = aws_s3_bucket.backups.id
+  count                   = local.create_bucket ? 1 : 0
+  bucket                  = aws_s3_bucket.backups[0].id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
 resource "aws_s3_bucket_server_side_encryption_configuration" "backups" {
-  bucket = aws_s3_bucket.backups.id
+  count  = local.create_bucket ? 1 : 0
+  bucket = aws_s3_bucket.backups[0].id
   rule {
     apply_server_side_encryption_by_default { sse_algorithm = "AES256" }
   }
 }
 resource "aws_s3_bucket_lifecycle_configuration" "backups" {
-  bucket = aws_s3_bucket.backups.id
+  count  = local.create_bucket ? 1 : 0
+  bucket = aws_s3_bucket.backups[0].id
   rule {
     id     = "expire-old-dumps"
     status = "Enabled"
@@ -115,7 +125,7 @@ resource "aws_iam_role" "app" {
 data "aws_iam_policy_document" "backup" {
   statement {
     actions   = ["s3:PutObject"]
-    resources = ["${aws_s3_bucket.backups.arn}/db/*"]
+    resources = ["arn:aws:s3:::${local.backup_bucket}/db/*"]
   }
 }
 resource "aws_iam_role_policy" "backup" {
@@ -153,7 +163,7 @@ resource "aws_instance" "app" {
     domain         = local.domain
     registry_image = var.registry_image
     admin_email    = var.admin_email
-    backup_bucket  = aws_s3_bucket.backups.bucket
+    backup_bucket  = local.backup_bucket
   })
 
   tags = { Name = var.name }
